@@ -23,6 +23,7 @@ fn walk(slots: &mut [Card; 5], filled: usize, deck: &[Card], start: usize,
     }
 }
 
+#[allow(dead_code)] // used by generator/src tests to check EV of a specific hold
 pub fn hold_ev(hand: &[Card; 5], mask: u8) -> f64 {
     let deck = remaining(hand);
     let mut slots = [Card(0); 5];
@@ -57,7 +58,6 @@ pub fn solve(hand: &[Card; 5]) -> Best {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::card::*;
 
     fn h(spec: [(Rank, Suit); 5]) -> [Card; 5] {
         let mut out = [Card(0); 5];

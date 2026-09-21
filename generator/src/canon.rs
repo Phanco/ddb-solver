@@ -77,6 +77,7 @@ pub struct Canon {
     pub rmi: usize,
     pub spi: usize,
     /// perm[j] is the entry position sitting at canonical position j.
+    #[allow(dead_code)] // read by generator/src tests only; not used by the release binary build
     pub perm: [u8; 5],
 }
 

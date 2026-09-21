@@ -1,8 +1,10 @@
 pub type Rank = u8;
 pub type Suit = u8;
 
+#[allow(dead_code)] // used by generator/src tests as a readable rank constant
 pub const TWO: Rank = 0;
 pub const FOUR: Rank = 2;
+#[allow(dead_code)] // used by generator/src tests as a readable rank constant
 pub const TEN: Rank = 8;
 pub const JACK: Rank = 9;
 pub const ACE: Rank = 12;

@@ -1,9 +1,16 @@
-// Integration test over the emitted table. Run only after `cargo run --release`.
+// Integration test over the emitted table. Runs automatically whenever
+// out/ddb96.bin is present (i.e. after `cargo run --release`); since
+// generator/out/ is gitignored, it cannot be made mandatory, so it degrades
+// to a no-op rather than failing a fresh checkout.
 use std::fs;
+use std::path::Path;
 
 #[test]
-#[ignore = "requires out/ddb96.bin from a full sweep"]
 fn table_has_the_right_shape_and_occupancy() {
+    if !Path::new("out/ddb96.bin").exists() {
+        eprintln!("skipping: out/ddb96.bin not present — run `cargo run --release` first");
+        return;
+    }
     let bytes = fs::read("out/ddb96.bin").expect("run `cargo run --release` first");
     assert_eq!(bytes.len(), 315_588 * 3);
 

@@ -8,6 +8,7 @@ pub enum Category {
 }
 
 impl Category {
+    #[allow(dead_code)] // used by generator/src tests to iterate every payout row
     pub const ALL: [Category; 14] = [
         Category::RoyalFlush, Category::StraightFlush,
         Category::FourAcesLowKicker, Category::FourLowLowKicker,
