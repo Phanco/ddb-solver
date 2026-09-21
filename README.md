@@ -14,16 +14,27 @@ precaches the app shell and the table itself for offline use.
 ## Regenerating the table
 
 The table is a build artifact of the Rust generator, not something edited
-by hand.
+by hand. Regenerating it is three steps, in order:
 
-```bash
-cd generator && cargo run --release
-cp out/ddb96.bin ../app/public/ddb96.bin
-```
+1. Run the sweep and copy the table into the app:
+   ```bash
+   cd generator && cargo run --release
+   cp out/ddb96.bin ../app/public/ddb96.bin
+   ```
+2. Copy the matching fixture so the cross-language agreement test checks
+   the new table, not a stale one:
+   ```bash
+   cp out/canonical-hands.bin ../app/test-fixtures/canonical-hands.bin
+   ```
+3. Rebuild the app so `app/dist/ddb96.bin` — the copy users actually run —
+   picks up the new solve:
+   ```bash
+   cd ../app && npm run build
+   ```
 
-`app/public/ddb96.bin` is gitignored (regenerable, and large); `app/dist/`
-— the built app, table included — is committed instead, so the app runs
-straight from a clone without a Rust toolchain or a build step.
+Both `app/public/ddb96.bin` and `app/dist/` are committed (the table
+appears in the repo twice), so a fresh clone runs and tests correctly
+without a Rust toolchain or a build step.
 
 ## Results
 
