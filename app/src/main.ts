@@ -24,9 +24,22 @@ function start(table: Table) {
       renderSuits(root, table, ranks, (resolved, suits) => {
         renderAnswer(root, ranks, suits, resolved.mask,
           resolved.evLow, resolved.evHigh, () => start(table));
-      });
+      }, () => start(table));
     }
   });
 }
 
-boot().catch(e => { root.textContent = `Failed to start: ${e.message}`; });
+function showBootError(e: unknown) {
+  const message = e instanceof Error ? e.message : String(e);
+  root.replaceChildren();
+  const p = document.createElement('p');
+  p.textContent = `Failed to start: ${message}. This app needs one successful ` +
+    'online load to install itself for offline use — check your connection and retry.';
+  root.appendChild(p);
+  const retry = document.createElement('button');
+  retry.textContent = 'Retry';
+  retry.addEventListener('click', () => { boot().catch(showBootError); });
+  root.appendChild(retry);
+}
+
+boot().catch(showBootError);
