@@ -1,0 +1,9 @@
+{
+  "name": "DDB Solver",
+  "short_name": "DDB",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#101014",
+  "theme_color": "#101014",
+  "icons": []
+}

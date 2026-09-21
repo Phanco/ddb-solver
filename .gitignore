@@ -1,3 +1,4 @@
 target/
 node_modules/
-*.bin
+generator/out/
+app/public/ddb96.bin
