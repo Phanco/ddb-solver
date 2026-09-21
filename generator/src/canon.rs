@@ -41,6 +41,32 @@ pub fn suit_pattern_index(pattern: &[u8; 5]) -> usize {
         .expect("not a valid restricted growth string")
 }
 
+pub const RANK_MULTISET_COUNT: usize = 6188;   // C(17,5)
+
+pub fn binom(n: u32, k: u32) -> u32 {
+    if k > n { return 0; }
+    let k = k.min(n - k);
+    let mut r: u64 = 1;
+    for i in 0..k as u64 {
+        r = r * (n as u64 - i) / (i + 1);
+    }
+    r as u32
+}
+
+/// Lexicographic rank of the 5-subset {c0<c1<...<c4} of {0..16}, where
+/// c[i] = sorted_ascending_ranks[i] + i.
+pub fn rank_multiset_index(ranks: &[Rank; 5]) -> usize {
+    let mut r = *ranks;
+    r.sort_unstable();
+    let n = 17u32;
+    let mut sum = 0u32;
+    for i in 0..5u32 {
+        let c = r[i as usize] as u32 + i;
+        sum += binom(n - 1 - c, 5 - i);
+    }
+    (binom(n, 5) - 1 - sum) as usize
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -72,5 +98,35 @@ mod tests {
         for (i, p) in suit_patterns().iter().enumerate() {
             assert_eq!(suit_pattern_index(p), i);
         }
+    }
+
+    #[test]
+    fn rank_multiset_index_is_a_bijection() {
+        let mut seen = vec![false; RANK_MULTISET_COUNT];
+        let mut n = 0usize;
+        for a in 0..13u8 { for b in a..13 { for c in b..13 {
+            for d in c..13 { for e in d..13 {
+                let i = rank_multiset_index(&[a, b, c, d, e]);
+                assert!(i < RANK_MULTISET_COUNT, "index {} out of range", i);
+                assert!(!seen[i], "collision at {}", i);
+                seen[i] = true;
+                n += 1;
+            }}}}}
+        assert_eq!(n, RANK_MULTISET_COUNT);
+        assert!(seen.iter().all(|&s| s), "index space has holes");
+    }
+
+    #[test]
+    fn rank_multiset_index_ignores_input_order() {
+        assert_eq!(
+            rank_multiset_index(&[ACE, TWO, JACK, TWO, TEN]),
+            rank_multiset_index(&[TWO, TEN, TWO, JACK, ACE])
+        );
+    }
+
+    #[test]
+    fn dead_multisets_sit_at_the_extremes() {
+        assert_eq!(rank_multiset_index(&[TWO; 5]), 0);
+        assert_eq!(rank_multiset_index(&[ACE; 5]), RANK_MULTISET_COUNT - 1);
     }
 }
