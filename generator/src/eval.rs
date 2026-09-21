@@ -141,4 +141,42 @@ mod tests {
         assert_eq!(category(&h), Category::FourAcesLowKicker);
         assert_eq!(category(&h).payout(), payout(&h));
     }
+
+    /// Every 5-card hand, bucketed by category, against counts derived
+    /// independently from combinatorics. The quad split is the DDB-specific
+    /// part: 4 aces * 12 low kickers = 12; 4 aces * 36 other = 36;
+    /// 3 low quads * 12 low-or-ace kickers = 36; 3 low quads * 36 other = 108;
+    /// 9 high quads * 48 kickers = 432. Total 624, the known quad count.
+    #[test]
+    fn census_matches_known_combinatorics() {
+        use std::collections::HashMap;
+        let mut counts: HashMap<Category, u64> = HashMap::new();
+        let all = Card::ALL;
+        for a in 0..52 { for b in a+1..52 { for c in b+1..52 {
+            for d in c+1..52 { for e in d+1..52 {
+                let h = [all[a], all[b], all[c], all[d], all[e]];
+                *counts.entry(category(&h)).or_insert(0) += 1;
+            }}}}}
+
+        let expected = [
+            (Category::RoyalFlush,               4u64),
+            (Category::StraightFlush,           36),
+            (Category::FourAcesLowKicker,       12),
+            (Category::FourAces,                36),
+            (Category::FourLowLowKicker,        36),
+            (Category::FourLow,                108),
+            (Category::FourHigh,               432),
+            (Category::FullHouse,             3744),
+            (Category::Flush,                 5108),
+            (Category::Straight,             10200),
+            (Category::Trips,                54912),
+            (Category::TwoPair,             123552),
+            (Category::JacksOrBetter,       337920),
+            (Category::Nothing,            2062860),
+        ];
+        for (cat, want) in expected {
+            assert_eq!(counts.get(&cat).copied().unwrap_or(0), want, "{:?}", cat);
+        }
+        assert_eq!(counts.values().sum::<u64>(), 2_598_960);
+    }
 }
