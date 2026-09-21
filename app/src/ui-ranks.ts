@@ -24,7 +24,7 @@ export function renderRanks(root: HTMLElement, onComplete: (ranks: Rank[]) => vo
         const b = document.createElement('button');
         b.dataset.role = 'rank';
         b.textContent = RANK_LABELS[rk];
-        b.disabled = chosen.filter(c => c === rk).length >= 4 || chosen.length >= 5;
+        b.disabled = chosen.filter(c => c === rk).length >= 4;
         b.addEventListener('click', () => {
           chosen.push(rk);
           if (chosen.length === 5) { onComplete(chosen.map(rank) as Rank[]); return; }

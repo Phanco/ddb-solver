@@ -9,6 +9,8 @@ body { margin: 0; font: 16px/1.3 system-ui, sans-serif; }
 .suit-col { display: flex; flex-direction: column; gap: var(--gap); flex: 1; }
 .suit-col.dim { opacity: 0.3; pointer-events: none; }
 .suit-col button { min-height: 52px; font-size: 22px; border-radius: 10px; }
+.suit-col button.chosen { outline: 3px solid currentColor; background: #2a6df4; color: #fff; }
+.suit-col button:disabled { opacity: 0.35; pointer-events: none; }
 .answer { display: flex; gap: var(--gap); margin: 24px 0; }
 .answer .card { flex: 1; min-height: 96px; display: grid; place-items: center;
   font-size: 26px; font-weight: 700; border-radius: 10px; border: 3px solid transparent; }

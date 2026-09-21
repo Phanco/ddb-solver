@@ -53,12 +53,31 @@ describe('analyze', () => {
     // The central claim of the app. If the rank-only pass says "resolved",
     // then fixing ANY concrete suits must yield the same hold. A classifier
     // that under-asks would give a confidently wrong hold; this catches it.
+    // Tiny deterministic PRNG (mulberry32) so the sample is reproducible
+    // without pulling in a dependency.
+    function mulberry32(seed: number) {
+      let a = seed;
+      return () => {
+        a |= 0; a = (a + 0x6D2B79F5) | 0;
+        let t = Math.imul(a ^ (a >>> 15), 1 | a);
+        t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+      };
+    }
+    const rnd = mulberry32(0xDDB96);
+    const randomRankSet = (): Rank[] => {
+      const out: number[] = [];
+      for (let i = 0; i < 5; i++) out.push(Math.floor(rnd() * 13));
+      return out.map(rank) as Rank[];
+    };
+
     const RANK_SETS = [
       R(12, 12, 12, 3, 0),   // three aces + low kicker
       R(12, 12, 5, 5, 8),    // aces up
       R(1, 3, 6, 9, 11),     // scattered junk
       R(4, 4, 4, 4, 12),     // quads
       R(10, 10, 2, 2, 7),    // two pair
+      ...Array.from({ length: 40 }, randomRankSet),
     ];
     for (const ranks of RANK_SETS) {
       const first = analyze(table, ranks, UNKNOWN);

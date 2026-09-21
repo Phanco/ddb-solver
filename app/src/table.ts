@@ -6,7 +6,7 @@ const OCCUPIED = 0x80;        // bit 7 of byte 0
 export class Table {
   #bytes: Uint8Array;
 
-  constructor(bytes: Uint8Array) {
+  private constructor(bytes: Uint8Array) {
     this.#bytes = bytes;
   }
 
