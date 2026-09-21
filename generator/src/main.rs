@@ -1,4 +1,5 @@
 mod card;
+mod canon;
 mod eval;
 
 fn main() {
