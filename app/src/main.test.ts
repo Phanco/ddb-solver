@@ -14,6 +14,13 @@ describe('pwa configuration', () => {
     expect(m.display).toBe('standalone');
     expect(m.start_url).toBeDefined();
     expect(m.name).toBeTruthy();
+    // Chrome requires at least one icon >= 144px to offer installation.
+    expect(m.icons.length).toBeGreaterThan(0);
+    for (const icon of m.icons) {
+      expect(icon.src).toBeTruthy();
+      expect(icon.sizes).toBeTruthy();
+      expect(icon.type).toBeTruthy();
+    }
   });
 
   it('ships a table large enough to be the real one', () => {
