@@ -31,30 +31,37 @@ export function renderSuits(
   onRestart: () => void,
 ): void {
   const known: (Suit | null)[] = [null, null, null, null, null];
+  // Frozen on the first draw. See the note on `.suit-col.narrow` in style.css:
+  // recomputing widths as suits arrive moves targets under the thumb.
+  let narrow: boolean[] | null = null;
 
   function draw() {
     const a = analyze(table, ranks, known);
     if (a.kind === 'resolved') { onResolved(a, known); return; }
+    if (!narrow) narrow = a.relevant.map(r => !r);
 
     const { stage, dock } = shell(root);
-    const live = a.relevant.filter(Boolean).length;
+    const left = a.relevant.filter((r, i) => r && known[i] === null).length;
     stage.appendChild(el(
       'p',
       'caption',
-      live === 1
-        ? 'One more suit decides it.'
-        : `${live} suits decide this hand. The rest are marked any.`,
+      left === 1 ? 'One more suit decides it.' : `${left} suits still matter.`,
     ));
 
     const cols = el('div', 'suits');
     for (let pos = 0; pos < 5; pos++) {
-      // Columns that cannot change the play shrink rather than only fading, so
-      // the ones that still matter get the width — and width is thumb accuracy.
-      const col = el('div', a.relevant[pos] ? 'suit-col' : 'suit-col dim');
+      // Width comes from `narrow`, frozen on the first draw; colour comes from
+      // current relevance. Keeping those separate is what stops a column from
+      // resizing under the thumb that just tapped it.
+      const classes = ['suit-col'];
+      if (narrow[pos]) classes.push('narrow');
+      if (!a.relevant[pos]) classes.push('dim');
+      const col = el('div', classes.join(' '));
 
       const head = el('div', 'suit-head', RANK_LABELS[ranks[pos]]);
-      if (!a.relevant[pos]) {
-        // Stacked rather than inline: a dimmed column is only ~2.25rem wide,
+      // "any" means "you need not answer this", so it is wrong once answered.
+      if (!a.relevant[pos] && known[pos] === null) {
+        // Stacked rather than inline: a narrow column is only ~2.25rem wide,
         // and "9 any" on one line clips to "9 a".
         head.appendChild(el('span', 'any', 'any'));
       }

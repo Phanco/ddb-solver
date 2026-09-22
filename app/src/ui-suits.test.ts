@@ -80,8 +80,41 @@ describe('suit selection', () => {
     for (let i = 0; i < 5; i++) {
       if (a.relevant[i]) continue;
       expect(cols[i].classList.contains('dim')).toBe(true);
+      // Dead from the deal, so it is narrow too. This also proves the `narrow`
+      // class is reachable at all — without it the width-stability test above
+      // would pass vacuously on a hand where nothing is ever narrow.
+      expect(cols[i].classList.contains('narrow')).toBe(true);
       expect(cols[i].querySelector('.suit-head')?.textContent).toContain('any');
     }
+  });
+
+  it('never changes a column\'s width once suits are being entered', () => {
+    // 7 Q 3 4 K, from a real device report. All five columns start live; the
+    // moment you answer the 7 it stops mattering. Recomputing widths there
+    // shrank the column under the thumb that had just tapped it and slid every
+    // other column sideways, moving the next target mid-sequence.
+    const root = document.createElement('div');
+    const ranks = R(5, 10, 1, 2, 11);
+    const before = analyze(table, ranks, [null, null, null, null, null]);
+    expect(before.kind).toBe('ambiguous');
+    if (before.kind !== 'ambiguous') return;
+    expect(before.relevant.every(Boolean), 'all five must start live').toBe(true);
+
+    renderSuits(root, table, ranks, vi.fn(), vi.fn());
+    const widthsBefore = [...root.querySelectorAll('.suit-col')]
+      .map(c => c.classList.contains('narrow'));
+
+    suitButton(root, 0, 0).click();
+
+    const cols = [...root.querySelectorAll('.suit-col')];
+    expect(cols.length).toBe(5);
+    expect(cols.map(c => c.classList.contains('narrow'))).toEqual(widthsBefore);
+    // The precise regression: answering the 7 makes its column stop mattering,
+    // so it must go dim WITHOUT going narrow.
+    expect(cols[0].classList.contains('dim'), 'should dim').toBe(true);
+    expect(cols[0].classList.contains('narrow'), 'must NOT resize').toBe(false);
+    // And an answered column is no longer labelled "any": it was answered.
+    expect(cols[0].querySelector('.suit-head')?.textContent).not.toContain('any');
   });
 
   it('disables the button that would duplicate an already-chosen card of the same rank', () => {

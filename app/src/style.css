@@ -235,12 +235,17 @@ button:disabled { opacity: 0.28; cursor: default; }
 .suit-col { flex: 1 1 0; display: flex; flex-direction: column; gap: var(--gap); min-width: 0; }
 
 /*
-  A column whose suit cannot change the play shrinks rather than merely fading,
-  so the columns that still matter get the extra width — and the extra width is
-  thumb accuracy.
+  Width is decided once, from the hand as first dealt, and then frozen.
+
+  A column that cannot change the play shrinks so the live columns get its
+  width — width is thumb accuracy. But answering a suit can make its own column
+  stop mattering, and recomputing widths then would shrink the card under the
+  thumb that just tapped it and slide every other column sideways, moving the
+  next target mid-sequence. So `narrow` is set from the initial deal and never
+  changes; `dim` keeps updating and only affects colour.
 */
-.suit-col.dim { flex: 0 1 2.25rem; pointer-events: none; }
-.suit-col.dim .suit { opacity: 0.22; }
+.suit-col.narrow { flex: 0 1 2.25rem; }
+.suit-col.dim .suit:not(.chosen) { opacity: 0.22; }
 .suit-col.dim .suit-head { color: var(--ink-dim); }
 .suit-head .any { display: block; font-size: 0.625rem; letter-spacing: 0.02em; line-height: 1.4; }
 
