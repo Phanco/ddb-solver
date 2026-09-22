@@ -5,7 +5,14 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>DDB Solver</title>
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <meta name="theme-color" content="#101014" />
     <link rel="apple-touch-icon" href="/icon-192.png" />
+    <!-- iOS ignores the manifest's display mode; these are what make Add to
+         Home Screen launch without Safari chrome. -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="DDB" />
   </head>
   <body>
     <div id="app"></div>
