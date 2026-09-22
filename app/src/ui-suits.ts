@@ -1,9 +1,11 @@
 import { analyze, type Analysis } from './solver';
 import type { Table } from './table';
 import { RANK_LABELS } from './ui-ranks';
+import { button, el, shell } from './ui-shell';
 import type { Rank, Suit } from './types';
 
 export const SUIT_LABELS = ['♥', '♦', '♣', '♠'] as const;
+const RED_SUITS = new Set<number>([0, 1]);
 
 type Resolved = Extract<Analysis, { kind: 'resolved' }>;
 
@@ -34,37 +36,34 @@ export function renderSuits(
     const a = analyze(table, ranks, known);
     if (a.kind === 'resolved') { onResolved(a, known); return; }
 
-    root.replaceChildren();
-    const h = document.createElement('h2');
-    h.textContent = 'Select suits';
-    root.appendChild(h);
+    const { stage, dock } = shell(root);
+    const live = a.relevant.filter(Boolean).length;
+    stage.appendChild(el(
+      'p',
+      'caption',
+      live === 1
+        ? 'One more suit decides it.'
+        : `${live} suits decide this hand. The rest are marked any.`,
+    ));
 
-    const cols = document.createElement('div');
-    cols.className = 'answer';
+    const cols = el('div', 'suits');
     for (let pos = 0; pos < 5; pos++) {
-      const col = document.createElement('div');
-      // A column nobody needs to answer is dimmed rather than removed, so the
-      // five columns stay aligned with the five cards on the machine.
-      col.className = a.relevant[pos] ? 'suit-col' : 'suit-col dim';
+      // Columns that cannot change the play shrink rather than only fading, so
+      // the ones that still matter get the width — and width is thumb accuracy.
+      const col = el('div', a.relevant[pos] ? 'suit-col' : 'suit-col dim');
 
-      const head = document.createElement('div');
-      head.className = 'slot';
-      head.textContent = a.relevant[pos] ? RANK_LABELS[ranks[pos]] : `${RANK_LABELS[ranks[pos]]} (any)`;
+      const head = el('div', 'suit-head', RANK_LABELS[ranks[pos]]);
+      if (!a.relevant[pos]) {
+        // Stacked rather than inline: a dimmed column is only ~2.25rem wide,
+        // and "9 any" on one line clips to "9 a".
+        head.appendChild(el('span', 'any', 'any'));
+      }
       col.appendChild(head);
 
       for (let s = 0; s < 4; s++) {
-        const b = document.createElement('button');
-        b.dataset.role = 'suit';
-        b.dataset.pos = String(pos);
-        b.dataset.suit = String(s);
-        b.textContent = SUIT_LABELS[s];
-        if (known[pos] === s) b.classList.add('chosen');
-        // Two cards of the same rank in the same suit would be the same
-        // physical card — disable the button so it can never be tapped.
-        const duplicate = wouldDuplicateCard(ranks, known, pos, s as Suit);
-        if (duplicate) b.disabled = true;
-        b.addEventListener('click', () => {
-          // Belt and braces: even though the duplicate button is disabled,
+        const cls = RED_SUITS.has(s) ? 'suit red' : 'suit';
+        const b = button(known[pos] === s ? `${cls} chosen` : cls, SUIT_LABELS[s], () => {
+          // Belt and braces: the duplicate button is already disabled, but
           // verify against a tentative copy before committing. A bad
           // assignment must never corrupt `known` or leave the screen unable
           // to redraw.
@@ -78,17 +77,24 @@ export function renderSuits(
           known[pos] = s as Suit;
           draw();
         });
+        b.dataset.role = 'suit';
+        b.dataset.pos = String(pos);
+        b.dataset.suit = String(s);
+        b.setAttribute('aria-label', `Card ${pos + 1} ${RANK_LABELS[ranks[pos]]}, suit ${SUIT_LABELS[s]}`);
+        // Two cards of the same rank in the same suit would be the same
+        // physical card — disable so it can never be tapped.
+        if (wouldDuplicateCard(ranks, known, pos, s as Suit)) b.disabled = true;
         col.appendChild(b);
       }
       cols.appendChild(col);
     }
-    root.appendChild(cols);
+    dock.appendChild(cols);
 
-    const restart = document.createElement('button');
+    const restart = button('ghost', 'New hand', onRestart);
     restart.dataset.role = 'restart';
-    restart.textContent = 'New hand';
-    restart.addEventListener('click', () => onRestart());
-    root.appendChild(restart);
+    restart.style.width = '100%';
+    restart.style.marginTop = '0.75rem';
+    dock.appendChild(restart);
   }
 
   draw();

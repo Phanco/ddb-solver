@@ -1,18 +1,282 @@
-:root { color-scheme: light dark; --gap: 8px; }
-body { margin: 0; font: 16px/1.3 system-ui, sans-serif; }
-#app { max-width: 480px; margin: 0 auto; padding: 16px; }
-.pad-row { display: flex; gap: var(--gap); margin-bottom: var(--gap); }
-.pad-row button { flex: 1; min-height: 56px; font-size: 22px; font-weight: 600; border-radius: 10px; }
-.slots { display: flex; gap: var(--gap); margin-top: 24px; }
-.slot { flex: 1; min-height: 72px; font-size: 26px; font-weight: 700; border-radius: 10px; }
-.slot.empty { opacity: 0.35; }
-.suit-col { display: flex; flex-direction: column; gap: var(--gap); flex: 1; }
-.suit-col.dim { opacity: 0.3; pointer-events: none; }
-.suit-col button { min-height: 52px; font-size: 22px; border-radius: 10px; }
-.suit-col button.chosen { outline: 3px solid currentColor; background: #2a6df4; color: #fff; }
-.suit-col button:disabled { opacity: 0.35; pointer-events: none; }
-.answer { display: flex; gap: var(--gap); margin: 24px 0; }
-.answer .card { flex: 1; min-height: 96px; display: grid; place-items: center;
-  font-size: 26px; font-weight: 700; border-radius: 10px; border: 3px solid transparent; }
-.answer .card.hold { border-color: currentColor; }
-.answer .card.discard { opacity: 0.3; }
+/*
+  Built for one scene: standing at a machine, dim room, phone in one hand,
+  seconds to decide. Every control lives in the bottom third because on a
+  21:9 cover screen the top of the display is out of thumb reach and you
+  cannot regrip with a hand on the buttons.
+*/
+
+:root {
+  color-scheme: dark;
+
+  --bg: #0b0b0c;
+  --stage: #121214;
+  --key: #232327;
+  --key-edge: #34343b;
+  --line: #2a2a30;
+
+  --ink: #f4f2ed;
+  --ink-dim: #9a9aa2;
+
+  --hold: #f0b429;
+  --hold-ink: #17100a;
+  --red: #e8574a;
+
+  --r: 12px;
+  --gap: 0.5rem;
+  --dock-max: 30rem;
+
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+* { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: 400 16px/1.35 system-ui, -apple-system, "Segoe UI", sans-serif;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;
+}
+
+::selection { background: var(--hold); color: var(--hold-ink); }
+
+:focus-visible {
+  outline: 2px solid var(--hold);
+  outline-offset: 2px;
+}
+
+/* ---- shell: stage grows, dock hugs the bottom edge ---- */
+
+#app {
+  min-height: 100dvh;
+  display: grid;
+  grid-template-rows: 1fr auto;
+  gap: var(--gap);
+}
+
+.stage {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 1.25rem;
+  padding: 1.25rem 1rem 0.75rem;
+  min-width: 0;
+}
+
+.stage-inner {
+  width: 100%;
+  max-width: var(--dock-max);
+  margin-inline: auto;
+}
+
+.dock {
+  padding: 0.75rem 1rem calc(0.75rem + env(safe-area-inset-bottom, 0px));
+  background: var(--bg);
+  border-top: 1px solid var(--line);
+}
+
+/* Anchored to one side, a full-width rule underlines 400px of nothing. */
+@media (min-width: 40rem) {
+  .dock { border-top: none; }
+  .dock-inner { border-top: 1px solid var(--line); padding-top: 0.75rem; }
+}
+
+.dock-inner {
+  width: 100%;
+  max-width: var(--dock-max);
+  margin-inline: auto;
+}
+
+/*
+  Unfolded, the inner display is ~880px wide. Stretching a 13-key pad across
+  it makes the outer keys unreachable, so the cluster keeps its width and
+  moves to the thumb's side of the screen instead.
+*/
+@media (min-width: 40rem) {
+  .dock-inner, .stage-inner { margin-inline: auto 0; }
+  [data-hand="left"] .dock-inner,
+  [data-hand="left"] .stage-inner { margin-inline: 0 auto; }
+}
+
+.caption {
+  margin: 0;
+  color: var(--ink-dim);
+  font-size: 0.875rem;
+}
+
+/* ---- keys ---- */
+
+button {
+  font: inherit;
+  color: var(--ink);
+  background: var(--key);
+  border: 1px solid var(--key-edge);
+  border-radius: var(--r);
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: transform 120ms var(--ease), background-color 120ms var(--ease);
+}
+
+button:active:not(:disabled) {
+  transform: scale(0.96);
+  background: var(--key-edge);
+}
+
+button:disabled { opacity: 0.28; cursor: default; }
+
+.keyrow {
+  display: grid;
+  gap: var(--gap);
+  margin-bottom: var(--gap);
+}
+
+.keyrow:last-child { margin-bottom: 0; }
+
+.key {
+  min-height: 3.75rem;
+  font-size: 1.5rem;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+.primary {
+  width: 100%;
+  min-height: 3.5rem;
+  font-size: 1.0625rem;
+  font-weight: 500;
+  background: var(--ink);
+  color: var(--bg);
+  border-color: var(--ink);
+}
+
+.ghost { min-height: 3rem; font-size: 0.9375rem; color: var(--ink-dim); }
+
+.actions { display: grid; grid-template-columns: 1fr 1fr; gap: var(--gap); }
+
+/* ---- the entered hand ---- */
+
+.hand { display: grid; grid-template-columns: repeat(5, 1fr); gap: var(--gap); }
+
+.slot {
+  aspect-ratio: 3 / 4;
+  max-height: 5.5rem;
+  display: grid;
+  place-items: center;
+  font-size: 1.625rem;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  background: var(--stage);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  padding: 0;
+}
+
+.slot.empty { color: var(--line); border-style: dashed; border-color: #3a3a42; background: transparent; }
+
+/* ---- answer ---- */
+
+.result { display: grid; grid-template-columns: repeat(5, 1fr); gap: var(--gap); }
+
+.card {
+  aspect-ratio: 3 / 4;
+  max-height: 7rem;
+  display: grid;
+  place-items: center;
+  border-radius: var(--r);
+  font-size: clamp(1.5rem, 7vw, 2.25rem);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  background: var(--stage);
+  border: 1px solid var(--line);
+  color: var(--ink-dim);
+}
+
+.card.hold {
+  background: var(--hold);
+  border-color: var(--hold);
+  color: var(--hold-ink);
+  animation: settle 260ms var(--ease) both;
+}
+
+.card.hold.red { color: #6d1a12; }
+.card.red { color: var(--red); }
+.card.discard { opacity: 0.32; }
+
+@keyframes settle {
+  from { transform: translateY(4px) scale(0.97); opacity: 0.55; }
+  to { transform: none; opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card.hold { animation: none; }
+  button { transition: none; }
+}
+
+.verdict { margin: 0.25rem 0 0; font-size: 1.5rem; font-weight: 500; letter-spacing: -0.02em; }
+.ev { margin: 0.25rem 0 0; color: var(--ink-dim); font-size: 0.9375rem; font-variant-numeric: tabular-nums; }
+
+/* ---- conditional readout ---- */
+
+.branch { border-radius: var(--r); padding: 0.875rem 1rem; }
+.branch + .branch { margin-top: var(--gap); }
+.branch-if { background: var(--hold); color: var(--hold-ink); }
+.branch-else { background: var(--stage); border: 1px solid var(--line); }
+.branch-cond { margin: 0; font-size: 0.9375rem; opacity: 0.8; }
+.branch-do { margin: 0.125rem 0 0; font-size: 1.375rem; font-weight: 500; letter-spacing: -0.02em; }
+.branch-ev { margin: 0.125rem 0 0; font-size: 0.875rem; opacity: 0.75; font-variant-numeric: tabular-nums; }
+
+/* ---- suit picker ---- */
+
+.suits { display: flex; gap: var(--gap); align-items: stretch; }
+
+.suit-col { flex: 1 1 0; display: flex; flex-direction: column; gap: var(--gap); min-width: 0; }
+
+/*
+  A column whose suit cannot change the play shrinks rather than merely fading,
+  so the columns that still matter get the extra width — and the extra width is
+  thumb accuracy.
+*/
+.suit-col.dim { flex: 0 1 2.25rem; pointer-events: none; }
+.suit-col.dim .suit { opacity: 0.22; }
+.suit-col.dim .suit-head { color: var(--ink-dim); }
+.suit-head .any { display: block; font-size: 0.625rem; letter-spacing: 0.02em; line-height: 1.4; }
+
+.suit-head {
+  text-align: center;
+  font-size: 1.125rem;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  padding-bottom: 0.125rem;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.suit { min-height: 3.25rem; font-size: 1.375rem; padding: 0; }
+.suit.red { color: var(--red); }
+.suit.chosen { background: var(--hold); border-color: var(--hold); color: var(--hold-ink); }
+.suit.chosen.red { color: #6d1a12; }
+
+/* ---- short viewports (landscape, or unfolded in landscape) ---- */
+
+@media (max-height: 34rem) {
+  .stage { padding-top: 0.75rem; gap: 0.625rem; }
+  .key { min-height: 2.75rem; font-size: 1.25rem; }
+  .suit { min-height: 2.5rem; }
+  .slot { max-height: 3.25rem; }
+  .card { max-height: 4rem; }
+  .primary { min-height: 3rem; }
+}
+
+.hand-toggle {
+  display: block;
+  margin: 0.5rem auto 0;
+  padding: 0.375rem 0.75rem;
+  min-height: 0;
+  font-size: 0.8125rem;
+  color: var(--ink-dim);
+  background: none;
+  border: none;
+}

@@ -1,6 +1,9 @@
 import { RANK_LABELS } from './ui-ranks';
 import { SUIT_LABELS } from './ui-suits';
+import { button, el, shell } from './ui-shell';
 import type { EntryMask, Rank, Suit } from './types';
+
+const RED_SUITS = new Set<number>([0, 1]);
 
 export function renderAnswer(
   root: HTMLElement,
@@ -11,41 +14,43 @@ export function renderAnswer(
   evHigh: number,
   onRestart: () => void,
 ): void {
-  root.replaceChildren();
+  const { stage, dock } = shell(root);
 
-  const row = document.createElement('div');
-  row.className = 'answer';
+  const row = el('div', 'result');
   for (let i = 0; i < 5; i++) {
     const held = (mask & (1 << i)) !== 0;
-    const c = document.createElement('div');
-    c.className = held ? 'card hold' : 'card discard';
     const suit = suits[i];
+    const red = suit !== null && RED_SUITS.has(suit);
+    const c = el('div', `card ${held ? 'hold' : 'discard'}${red ? ' red' : ''}`);
+    c.style.animationDelay = held ? `${i * 26}ms` : '0ms';
     c.textContent = RANK_LABELS[ranks[i]] + (suit === null ? '' : SUIT_LABELS[suit]);
     row.appendChild(c);
   }
-  root.appendChild(row);
+  stage.appendChild(row);
 
   // Positions, never ranks: two cards can share a rank, but not a slot.
   const held = [0, 1, 2, 3, 4].filter(i => mask & (1 << i)).map(i => i + 1);
-  const instruction = document.createElement('p');
+  const instruction = el(
+    'p',
+    'verdict',
+    held.length === 0 ? 'Hold nothing — draw five.' : `Hold ${held.join(', ')}`,
+  );
   instruction.dataset.role = 'instruction';
-  instruction.textContent = held.length === 0
-    ? 'Hold nothing — draw five.'
-    : `Hold ${held.join(', ')}`;
-  root.appendChild(instruction);
+  stage.appendChild(instruction);
 
-  const ev = document.createElement('p');
-  ev.dataset.role = 'ev';
   // A range, not a midpoint: if suits were never pinned down the EV genuinely
   // spans a window, and a single figure would invent precision.
-  ev.textContent = Math.abs(evHigh - evLow) < 0.005
-    ? `EV ${evLow.toFixed(2)} coins`
-    : `EV ${evLow.toFixed(2)}–${evHigh.toFixed(2)} coins`;
-  root.appendChild(ev);
+  const ev = el(
+    'p',
+    'ev',
+    Math.abs(evHigh - evLow) < 0.005
+      ? `EV ${evLow.toFixed(2)} coins`
+      : `EV ${evLow.toFixed(2)}–${evHigh.toFixed(2)} coins`,
+  );
+  ev.dataset.role = 'ev';
+  stage.appendChild(ev);
 
-  const again = document.createElement('button');
+  const again = button('primary', 'New hand', onRestart);
   again.dataset.role = 'restart';
-  again.textContent = 'New hand';
-  again.addEventListener('click', onRestart);
-  root.appendChild(again);
+  dock.appendChild(again);
 }

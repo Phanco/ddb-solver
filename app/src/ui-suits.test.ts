@@ -63,16 +63,24 @@ describe('suit selection', () => {
   });
 
   it('labels a dimmed column "any" so it reads as answered-for-you, not broken', () => {
+    // A K Q J 7: four royal cards, so the 7's suit cannot change the play and
+    // its column is dead. The hand is chosen deliberately — K Q J 9 3 has all
+    // five columns live, which made an earlier version of this test vacuous.
     const root = document.createElement('div');
-    const ranks = R(11, 10, 9, 7, 1);           // K Q J 9 3 — suits matter
+    const ranks = R(12, 11, 10, 9, 5);
     const a = analyze(table, ranks, [null, null, null, null, null]);
     expect(a.kind).toBe('ambiguous');
     if (a.kind !== 'ambiguous') return;
 
+    const dead = a.relevant.filter(r => !r).length;
+    expect(dead, 'test hand must actually have a dead column').toBeGreaterThan(0);
+
     renderSuits(root, table, ranks, vi.fn(), vi.fn());
     const cols = [...root.querySelectorAll('.suit-col')];
     for (let i = 0; i < 5; i++) {
-      if (!a.relevant[i]) expect(cols[i].querySelector('.slot')?.textContent).toContain('any');
+      if (a.relevant[i]) continue;
+      expect(cols[i].classList.contains('dim')).toBe(true);
+      expect(cols[i].querySelector('.suit-head')?.textContent).toContain('any');
     }
   });
 
