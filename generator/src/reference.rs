@@ -1,6 +1,5 @@
 use crate::card::*;
-use crate::eval::payout;
-use crate::solve::Best;
+use crate::solve::{Best, Payout};
 
 /// Every k-subset of `items`, materialised. Slow and plainly correct.
 fn combinations(items: &[Card], k: usize) -> Vec<Vec<Card>> {
@@ -17,7 +16,7 @@ fn combinations(items: &[Card], k: usize) -> Vec<Vec<Card>> {
     out
 }
 
-pub fn reference_solve(hand: &[Card; 5]) -> Best {
+pub fn reference_solve(hand: &[Card; 5], payout: Payout) -> Best {
     let deck: Vec<Card> = Card::ALL.iter().copied().filter(|c| !hand.contains(c)).collect();
     let mut best = Best { mask: 0, ev: -1.0 };
     for mask in 0u8..32 {
@@ -41,6 +40,7 @@ pub fn reference_solve(hand: &[Card; 5]) -> Best {
 mod tests {
     use super::*;
     use crate::card::Card;
+    use crate::eval::ddb::payout;
     use crate::solve::solve;
     use rand::prelude::*;
 
@@ -51,8 +51,8 @@ mod tests {
             let mut deck: Vec<Card> = Card::ALL.to_vec();
             deck.shuffle(&mut rng);
             let hand: [Card; 5] = core::array::from_fn(|i| deck[i]);
-            let fast = solve(&hand);
-            let slow = reference_solve(&hand);
+            let fast = solve(&hand, payout);
+            let slow = reference_solve(&hand, payout);
             assert_eq!(fast.mask, slow.mask, "trial {} hand {:?}", trial, hand);
             assert!((fast.ev - slow.ev).abs() < 1e-9,
                 "trial {} EV {} vs {}", trial, fast.ev, slow.ev);

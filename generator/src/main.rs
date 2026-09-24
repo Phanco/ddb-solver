@@ -20,7 +20,7 @@ fn main() {
     let solved: Vec<(usize, u8, f64, u32)> = hands
         .par_iter()
         .map(|(hand, idx)| {
-            let best = solve::solve(hand);
+            let best = solve::solve(hand, eval::ddb::payout);
             (*idx, best.mask, best.ev, orbit_size(hand))
         })
         .collect();

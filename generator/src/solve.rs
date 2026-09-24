@@ -1,5 +1,7 @@
 use crate::card::*;
-use crate::eval::payout;
+
+/// A game's paytable, as the only thing `solve` needs to know about it.
+pub type Payout = fn(&[Card; 5]) -> u32;
 
 pub struct Best { pub mask: u8, pub ev: f64 }
 
@@ -10,7 +12,7 @@ fn remaining(hand: &[Card; 5]) -> Vec<Card> {
 
 /// Sum payouts over every way to fill the open slots from `deck[start..]`.
 fn walk(slots: &mut [Card; 5], filled: usize, deck: &[Card], start: usize,
-        need: usize, total: &mut u64, count: &mut u64) {
+        need: usize, total: &mut u64, count: &mut u64, payout: Payout) {
     if need == 0 {
         *total += payout(slots) as u64;
         *count += 1;
@@ -19,12 +21,12 @@ fn walk(slots: &mut [Card; 5], filled: usize, deck: &[Card], start: usize,
     // Stop early when too few cards remain to fill the rest.
     for i in start..=deck.len() - need {
         slots[filled] = deck[i];
-        walk(slots, filled + 1, deck, i + 1, need - 1, total, count);
+        walk(slots, filled + 1, deck, i + 1, need - 1, total, count, payout);
     }
 }
 
 #[allow(dead_code)] // used by generator/src tests to check EV of a specific hold
-pub fn hold_ev(hand: &[Card; 5], mask: u8) -> f64 {
+pub fn hold_ev(hand: &[Card; 5], mask: u8, payout: Payout) -> f64 {
     let deck = remaining(hand);
     let mut slots = [Card(0); 5];
     let mut filled = 0;
@@ -33,11 +35,11 @@ pub fn hold_ev(hand: &[Card; 5], mask: u8) -> f64 {
     }
     let need = 5 - filled;
     let (mut total, mut count) = (0u64, 0u64);
-    walk(&mut slots, filled, &deck, 0, need, &mut total, &mut count);
+    walk(&mut slots, filled, &deck, 0, need, &mut total, &mut count, payout);
     total as f64 / count as f64
 }
 
-pub fn solve(hand: &[Card; 5]) -> Best {
+pub fn solve(hand: &[Card; 5], payout: Payout) -> Best {
     let deck = remaining(hand);
     let mut best = Best { mask: 0, ev: -1.0 };
     for mask in 0u8..32 {
@@ -47,7 +49,7 @@ pub fn solve(hand: &[Card; 5]) -> Best {
             if mask & (1 << i) != 0 { slots[filled] = hand[i]; filled += 1; }
         }
         let (mut total, mut count) = (0u64, 0u64);
-        walk(&mut slots, filled, &deck, 0, 5 - filled, &mut total, &mut count);
+        walk(&mut slots, filled, &deck, 0, 5 - filled, &mut total, &mut count, payout);
         let ev = total as f64 / count as f64;
         // Strict comparison, so the lowest mask wins ties and runs reproduce.
         if ev > best.ev { best = Best { mask, ev }; }
@@ -58,6 +60,7 @@ pub fn solve(hand: &[Card; 5]) -> Best {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::eval::ddb::payout;
 
     fn h(spec: [(Rank, Suit); 5]) -> [Card; 5] {
         let mut out = [Card(0); 5];
@@ -70,23 +73,23 @@ mod tests {
     #[test]
     fn pat_hands_have_exact_expected_values() {
         let royal = h([(TEN,0),(JACK,0),(10,0),(11,0),(ACE,0)]);
-        assert_eq!(hold_ev(&royal, 0b11111), 800.0);
-        let best = solve(&royal);
+        assert_eq!(hold_ev(&royal, 0b11111, payout), 800.0);
+        let best = solve(&royal, payout);
         assert_eq!(best.mask, 0b11111);
         assert_eq!(best.ev, 800.0);
 
         let sf = h([(4,1),(5,1),(6,1),(7,1),(8,1)]);
-        assert_eq!(hold_ev(&sf, 0b11111), 50.0);
+        assert_eq!(hold_ev(&sf, 0b11111, payout), 50.0);
 
         let quad = h([(ACE,0),(ACE,1),(ACE,2),(ACE,3),(2,0)]);
-        assert_eq!(hold_ev(&quad, 0b11111), 400.0);
-        assert_eq!(solve(&quad).mask, 0b11111);
+        assert_eq!(hold_ev(&quad, 0b11111, payout), 400.0);
+        assert_eq!(solve(&quad, payout).mask, 0b11111);
     }
 
     #[test]
     fn holding_nothing_still_has_positive_value() {
         let junk = h([(0,0),(2,1),(4,2),(6,3),(8,0)]);
-        let ev = hold_ev(&junk, 0);
+        let ev = hold_ev(&junk, 0, payout);
         assert!(ev > 0.0 && ev < 1.0, "draw-five EV was {}", ev);
     }
 
@@ -104,13 +107,13 @@ mod tests {
     #[test]
     fn three_aces_alone_beats_keeping_a_low_kicker() {
         let hand = h([(ACE,0),(ACE,1),(ACE,2),(2,3),(9,0)]);   // A A A 4 J
-        let with_kicker = hold_ev(&hand, 0b01111);   // three aces + the four
-        let without     = hold_ev(&hand, 0b00111);   // three aces alone
+        let with_kicker = hold_ev(&hand, 0b01111, payout);   // three aces + the four
+        let without     = hold_ev(&hand, 0b00111, payout);   // three aces alone
         assert_eq!(with_kicker, 556.0 / 47.0);
         assert_eq!(without, 13501.0 / 1081.0);
         assert!(without > with_kicker,
             "drawing two ({}) should beat keeping the kicker ({})",
             without, with_kicker);
-        assert_eq!(solve(&hand).mask, 0b00111);
+        assert_eq!(solve(&hand, payout).mask, 0b00111);
     }
 }
