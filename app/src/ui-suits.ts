@@ -1,5 +1,6 @@
 import { analyze, type Analysis } from './solver';
 import type { Table } from './table';
+import type { Game } from './games';
 import { RANK_LABELS } from './ui-ranks';
 import { button, el, shell } from './ui-shell';
 import type { Rank, Suit } from './types';
@@ -25,6 +26,7 @@ function wouldDuplicateCard(
 
 export function renderSuits(
   root: HTMLElement,
+  game: Game,
   table: Table,
   ranks: readonly Rank[],
   onResolved: (a: Resolved, suits: (Suit | null)[]) => void,
@@ -41,6 +43,11 @@ export function renderSuits(
     if (!narrow) narrow = a.relevant.map(r => !r);
 
     const { stage, dock } = shell(root);
+
+    const tag = el('p', 'caption', `${game.short} · ${game.returnPct}`);
+    tag.dataset.role = 'game-label';
+    stage.appendChild(tag);
+
     const left = a.relevant.filter((r, i) => r && known[i] === null).length;
     stage.appendChild(el(
       'p',

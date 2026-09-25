@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 import { Table } from './table';
 import { renderSuits, SUIT_LABELS } from './ui-suits';
 import { analyze } from './solver';
+import { GAMES } from './games';
 import { rank, type Rank } from './types';
 
 let table: Table;
@@ -18,20 +19,20 @@ function suitButton(root: HTMLElement, pos: number, suit: number) {
 
 describe('suit selection', () => {
   it('shows one column per card with four suits each', () => {
-    renderSuits(document.createElement('div'), table, R(11, 10, 9, 7, 1), vi.fn(), vi.fn());
+    renderSuits(document.createElement('div'), GAMES.ddb, table, R(11, 10, 9, 7, 1), vi.fn(), vi.fn());
     expect(SUIT_LABELS).toEqual(['♥', '♦', '♣', '♠']);
   });
 
   it('renders five columns of four suit buttons', () => {
     const root = document.createElement('div');
-    renderSuits(root, table, R(11, 10, 9, 7, 1), vi.fn(), vi.fn());
+    renderSuits(root, GAMES.ddb, table, R(11, 10, 9, 7, 1), vi.fn(), vi.fn());
     expect(root.querySelectorAll('[data-role="suit"]').length).toBe(20);
   });
 
   it('resolves before all five suits are entered', () => {
     const root = document.createElement('div');
     const done = vi.fn();
-    renderSuits(root, table, R(11, 10, 9, 7, 1), done, vi.fn());
+    renderSuits(root, GAMES.ddb, table, R(11, 10, 9, 7, 1), done, vi.fn());
     // K, Q, J all different suits kills every royal and flush draw, so the
     // remaining two cards cannot matter.
     suitButton(root, 0, 0).click();
@@ -54,7 +55,7 @@ describe('suit selection', () => {
     expect(a.kind).toBe('ambiguous');
     if (a.kind !== 'ambiguous') return;
 
-    renderSuits(root, table, ranks, vi.fn(), vi.fn());
+    renderSuits(root, GAMES.ddb, table, ranks, vi.fn(), vi.fn());
     const cols = [...root.querySelectorAll('.suit-col')];
     expect(cols.length).toBe(5);
     expect(cols.map(c => c.classList.contains('dim'))).toEqual(
@@ -75,7 +76,7 @@ describe('suit selection', () => {
     const dead = a.relevant.filter(r => !r).length;
     expect(dead, 'test hand must actually have a dead column').toBeGreaterThan(0);
 
-    renderSuits(root, table, ranks, vi.fn(), vi.fn());
+    renderSuits(root, GAMES.ddb, table, ranks, vi.fn(), vi.fn());
     const cols = [...root.querySelectorAll('.suit-col')];
     for (let i = 0; i < 5; i++) {
       if (a.relevant[i]) continue;
@@ -100,7 +101,7 @@ describe('suit selection', () => {
     if (before.kind !== 'ambiguous') return;
     expect(before.relevant.every(Boolean), 'all five must start live').toBe(true);
 
-    renderSuits(root, table, ranks, vi.fn(), vi.fn());
+    renderSuits(root, GAMES.ddb, table, ranks, vi.fn(), vi.fn());
     const widthsBefore = [...root.querySelectorAll('.suit-col')]
       .map(c => c.classList.contains('narrow'));
 
@@ -120,7 +121,7 @@ describe('suit selection', () => {
   it('disables the button that would duplicate an already-chosen card of the same rank', () => {
     const root = document.createElement('div');
     // 7 7 K Q J — a same-rank pair, both positions live.
-    renderSuits(root, table, R(5, 5, 11, 10, 9), vi.fn(), vi.fn());
+    renderSuits(root, GAMES.ddb, table, R(5, 5, 11, 10, 9), vi.fn(), vi.fn());
     suitButton(root, 0, 0).click();     // 7♥ at position 0
     const dup = suitButton(root, 1, 0); // 7♥ at position 1 would be the same card
     expect(dup.disabled).toBe(true);
@@ -129,7 +130,7 @@ describe('suit selection', () => {
   it('tapping a duplicate suit on a same-rank pair does not throw and does not corrupt state', () => {
     const root = document.createElement('div');
     const done = vi.fn();
-    renderSuits(root, table, R(5, 5, 11, 10, 9), done, vi.fn());
+    renderSuits(root, GAMES.ddb, table, R(5, 5, 11, 10, 9), done, vi.fn());
     suitButton(root, 0, 0).click();
     expect(() => suitButton(root, 1, 0).click()).not.toThrow();
     // The illegal choice must not have been committed: position 1 still has
@@ -141,10 +142,16 @@ describe('suit selection', () => {
   it('renders a New hand button on the suit screen that calls onRestart', () => {
     const root = document.createElement('div');
     const onRestart = vi.fn();
-    renderSuits(root, table, R(11, 10, 9, 7, 1), vi.fn(), onRestart);
+    renderSuits(root, GAMES.ddb, table, R(11, 10, 9, 7, 1), vi.fn(), onRestart);
     const btn = root.querySelector('[data-role="restart"]') as HTMLButtonElement;
     expect(btn).toBeTruthy();
     btn.click();
     expect(onRestart).toHaveBeenCalled();
+  });
+
+  it('names the active game, like the rank screen, readout and answer do', () => {
+    const root = document.createElement('div');
+    renderSuits(root, GAMES.deuces, table, R(11, 10, 9, 7, 1), vi.fn(), vi.fn());
+    expect(root.querySelector('[data-role="game-label"]')?.textContent).toContain('Deuces');
   });
 });
