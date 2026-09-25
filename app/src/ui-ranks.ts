@@ -1,4 +1,5 @@
 import { rank, type Rank } from './types';
+import { otherGame, type Game, type GameId } from './games';
 import { button, el, shell, handToggle } from './ui-shell';
 
 export const RANK_LABELS = ['2','3','4','5','6','7','8','9','T','J','Q','K','A'] as const;
@@ -15,7 +16,12 @@ const LAYOUT: number[][] = [
   [9, 10, 11, 12],
 ];
 
-export function renderRanks(root: HTMLElement, onComplete: (ranks: Rank[]) => void): void {
+export function renderRanks(
+  root: HTMLElement,
+  game: Game,
+  onComplete: (ranks: Rank[]) => void,
+  onSwitch: (id: GameId) => void,
+): void {
   const chosen: number[] = [];
 
   function draw() {
@@ -25,7 +31,7 @@ export function renderRanks(root: HTMLElement, onComplete: (ranks: Rank[]) => vo
       'p',
       'caption',
       chosen.length === 0
-        ? 'Type the five ranks you were dealt.'
+        ? `${game.label} · type the five ranks you were dealt.`
         : `${5 - chosen.length} to go. Tap a card to clear it.`,
     ));
 
@@ -65,6 +71,11 @@ export function renderRanks(root: HTMLElement, onComplete: (ranks: Rank[]) => vo
 
     const toggle = handToggle(draw);
     if (toggle) dock.appendChild(toggle);
+
+    const next = otherGame(game);
+    const swap = button('hand-toggle', `Switch to ${next.label}`, () => onSwitch(next.id));
+    swap.dataset.role = 'game';
+    dock.appendChild(swap);
   }
 
   draw();

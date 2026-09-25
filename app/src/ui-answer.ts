@@ -1,12 +1,14 @@
 import { RANK_LABELS } from './ui-ranks';
 import { SUIT_LABELS } from './ui-suits';
 import { button, el, shell } from './ui-shell';
+import type { Game } from './games';
 import type { EntryMask, Rank, Suit } from './types';
 
 const RED_SUITS = new Set<number>([0, 1]);
 
 export function renderAnswer(
   root: HTMLElement,
+  game: Game,
   ranks: readonly Rank[],
   suits: readonly (Suit | null)[],
   mask: EntryMask,
@@ -15,6 +17,10 @@ export function renderAnswer(
   onRestart: () => void,
 ): void {
   const { stage, dock } = shell(root);
+
+  const tag = el('p', 'caption', `${game.short} · ${game.returnPct}`);
+  tag.dataset.role = 'game-label';
+  stage.appendChild(tag);
 
   const row = el('div', 'result');
   for (let i = 0; i < 5; i++) {

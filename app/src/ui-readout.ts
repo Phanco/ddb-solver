@@ -1,6 +1,7 @@
 import type { Branches } from './branches';
 import { RANK_LABELS } from './ui-ranks';
 import { button, el, shell } from './ui-shell';
+import type { Game } from './games';
 import type { Rank } from './types';
 
 /**
@@ -14,12 +15,17 @@ import type { Rank } from './types';
  */
 export function renderReadout(
   root: HTMLElement,
+  game: Game,
   ranks: readonly Rank[],
   b: Branches,
   onPickSuits: () => void,
   onRestart: () => void,
 ): void {
   const { stage, dock } = shell(root);
+
+  const tag = el('p', 'caption', `${game.short} · ${game.returnPct}`);
+  tag.dataset.role = 'game-label';
+  stage.appendChild(tag);
 
   const row = el('div', 'result');
   for (let i = 0; i < 5; i++) {
