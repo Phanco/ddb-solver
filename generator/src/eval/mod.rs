@@ -2,4 +2,5 @@
 //! so `solve` can be handed whichever game is being swept.
 pub mod ddb;
 pub mod deuces;
+#[cfg(test)]
 pub mod wild_ref;
