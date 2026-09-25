@@ -35,7 +35,7 @@ const DEFAULT: GameId = 'ddb';
 export function currentGame(): Game {
   try {
     const stored = localStorage.getItem(KEY);
-    if (stored === 'ddb' || stored === 'deuces') return GAMES[stored];
+    if ((GAME_IDS as readonly string[]).includes(stored ?? '')) return GAMES[stored as GameId];
   } catch { /* private mode */ }
   return GAMES[DEFAULT];
 }
