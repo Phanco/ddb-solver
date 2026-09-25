@@ -2,3 +2,4 @@
 //! so `solve` can be handed whichever game is being swept.
 pub mod ddb;
 pub mod deuces;
+pub mod wild_ref;
