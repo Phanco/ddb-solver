@@ -3,6 +3,7 @@ use crate::eval::deuces::{Category, ROYAL_WINDOW, STRAIGHT_WINDOWS};
 
 /// Classify taking every card at face value — no card is wild here. Recognises
 /// five of a kind, which a real deck cannot produce but a wild substitution can.
+#[allow(dead_code)] // used by generator/src tests as the differential reference evaluator
 fn natural_category(cards: &[Card; 5]) -> Category {
     let mut counts = [0u8; 13];
     let mut suits = 0u8;
@@ -39,6 +40,7 @@ fn natural_category(cards: &[Card; 5]) -> Category {
 /// deuce is then read as an ordinary rank-2 card, which can never overstate the
 /// hand. Duplicates are allowed — a wild may become a card already held, which
 /// is the only way five of a kind exists at all.
+#[allow(dead_code)] // used by generator/src tests as the differential reference evaluator
 pub fn reference_category(cards: &[Card; 5]) -> Category {
     let wild_at: Vec<usize> = (0..5).filter(|&i| cards[i].rank() == TWO).collect();
     if wild_at.is_empty() { return natural_category(cards); }
@@ -63,11 +65,13 @@ pub fn reference_category(cards: &[Card; 5]) -> Category {
 /// house can never produce a quad under any substitution, so the fast
 /// evaluator claiming quads there still mismatches. All this removes is a
 /// disagreement about naming a hand that both sides agree is worth 4.
+#[allow(dead_code)] // used by generator/src tests as the differential reference evaluator
 fn better(a: Category, b: Category) -> bool {
     use std::cmp::Reverse;
     (a.payout(), Reverse(a as usize)) > (b.payout(), Reverse(b as usize))
 }
 
+#[allow(dead_code)] // used by generator/src tests as the differential reference evaluator
 fn fill(work: &mut [Card; 5], wild_at: &[usize], k: usize, best: &mut Category) {
     if k == wild_at.len() {
         let c = natural_category(work);
@@ -83,7 +87,6 @@ fn fill(work: &mut [Card; 5], wild_at: &[usize], k: usize, best: &mut Category) 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::card::*;
     use crate::eval::deuces;
 
     fn h(spec: [(Rank, Suit); 5]) -> [Card; 5] {

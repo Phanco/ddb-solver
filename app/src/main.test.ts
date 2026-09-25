@@ -27,4 +27,19 @@ describe('pwa configuration', () => {
     expect(existsSync('public/ddb96.bin')).toBe(true);
     expect(readFileSync('public/ddb96.bin').length).toBe(315_588 * 3);
   });
+
+  it('ships both tables at full size', () => {
+    for (const f of ['public/ddb96.bin', 'public/illinois-deuces.bin']) {
+      expect(existsSync(f), f).toBe(true);
+      expect(readFileSync(f).length, f).toBe(315_588 * 3);
+    }
+  });
+
+  it('refuses to build without either table', () => {
+    // The build-time guard is what stops a silent broken bundle; it must name
+    // both files, not just the one it started with.
+    const cfg = readFileSync('vite.config.ts', 'utf8');
+    expect(cfg).toMatch(/ddb96\.bin/);
+    expect(cfg).toMatch(/illinois-deuces\.bin/);
+  });
 });

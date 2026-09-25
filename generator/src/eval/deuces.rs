@@ -34,6 +34,7 @@ pub enum Category {
 }
 
 impl Category {
+    #[allow(dead_code)] // used by generator/src tests to iterate every payout row
     pub const ALL: [Category; 11] = [
         Category::NaturalRoyal, Category::FourDeuces, Category::WildRoyal,
         Category::FiveOfAKind, Category::StraightFlush, Category::FourOfAKind,
@@ -104,7 +105,6 @@ pub fn payout(cards: &[Card; 5]) -> u32 { category(cards).payout() }
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::card::*;
 
     fn h(spec: [(Rank, Suit); 5]) -> [Card; 5] {
         let mut out = [Card(0); 5];

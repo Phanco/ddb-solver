@@ -11,11 +11,13 @@ export default defineConfig({
       // succeeds silently, emitting a dist/ with no ddb96.bin and a service
       // worker that installs but can never answer anything.
       buildStart() {
-        if (!existsSync('public/ddb96.bin')) {
-          throw new Error(
-            'public/ddb96.bin is missing — run `cd generator && cargo run ' +
-            '--release` and copy out/ddb96.bin into app/public/',
-          );
+        for (const f of ['ddb96.bin', 'illinois-deuces.bin']) {
+          if (!existsSync(`public/${f}`)) {
+            throw new Error(
+              `public/${f} is missing — run \`cd generator && cargo run --release\` ` +
+              `and copy out/${f} into app/public/`,
+            );
+          }
         }
       },
     },
