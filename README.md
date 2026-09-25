@@ -157,8 +157,10 @@ npm run build      # production build -> app/dist
 npm run dev        # local dev server
 ```
 
-The build is a PWA (`vite-plugin-pwa`, `generateSW` mode): it precaches
-both `ddb96.bin` and `illinois-deuces.bin` explicitly, because the default
+The build is a PWA (`vite-plugin-pwa`, `generateSW` mode): the precache glob
+includes the `bin` extension, so every table in `app/public/*.bin` — both
+`ddb96.bin` and `illinois-deuces.bin` today, and any table added later —
+is picked up automatically. Without that extension in the glob, the default
 precache globs skip unknown file extensions and would otherwise ship a
 service worker that installs cleanly and then can't answer anything
 offline.

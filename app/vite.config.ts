@@ -27,7 +27,7 @@ export default defineConfig({
       workbox: {
         // The table is the app. Without it explicitly precached the service
         // worker installs happily and the app cannot answer anything offline.
-        globPatterns: ['**/*.{js,css,html,bin,webmanifest,png}'],
+        globPatterns: ['**/*.{js,css,html,bin,webmanifest,png,svg}'],
         maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
       },
     }),
